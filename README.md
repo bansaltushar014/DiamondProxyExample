@@ -1,13 +1,16 @@
 # Sample Hardhat Project
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+This project demonstrates usecase of Diamond Proxy. 
 
-Try running some of the following tasks:
+## Branches 
+```shell
+- master                // Diamond proxy example for ERC20 with diamond storage 
+- ERC20withAppStorage   // Diamond proxy example for ERC20 with App storage
+```
+
+Steps to test the app:
 
 ```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
+npx hardhat compile              - to compile 
+npx hardhat test  --grep Diamond - to test 
 ```
