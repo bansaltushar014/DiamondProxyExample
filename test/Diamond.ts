@@ -13,7 +13,6 @@ describe("Diamond", function () {
 		const DiamondCutFacet = await ethers.getContractFactory("DiamondCutFacet");
 		const diamondCutFacet = await DiamondCutFacet.connect(owner).deploy();
         
-
 		const _diamondCut = [
 			{ facetAddress: erc20v1.target, action: "0", functionSelectors: ["0x9e1dde4b"] }, // function signature 'setValue(string memory, string memory, uint)'
 			{ facetAddress: erc20v1.target, action: "0", functionSelectors: ["0xa9059cbb"] }, // function signature 'transfer(address , uint)'
