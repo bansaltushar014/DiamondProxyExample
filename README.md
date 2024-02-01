@@ -6,6 +6,7 @@ This project demonstrates usecase of Diamond Proxy.
 ```shell
 - master                // Diamond proxy example for ERC20 with diamond storage 
 - ERC20withAppStorage   // Diamond proxy example for ERC20 with App storage
+- StakingWithAppStorage // Diamond proxy example for Stacking Withdraw and Rewards. 
 ```
 
 Steps to test the app:

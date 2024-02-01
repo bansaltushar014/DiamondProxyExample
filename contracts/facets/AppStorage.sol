@@ -1,14 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
+import {IERC20} from "../interfaces/IERC20.sol";
 
-struct ERC20State {
+struct StakingState {
+        address owner;
+        uint  duration;
+        uint finishAt;
+        uint updatedAt;
+        uint rewardRate;
+        uint rewardPerTokenStored;
+        mapping(address => uint) userRewardPerTokenPaid;
+        mapping(address => uint) rewards;
         uint totalSupply;
-        string name ;
-        string symbol;
-        uint decimals;
         mapping(address => uint) balanceOf;
-        mapping(address => mapping(address => uint)) allowance;
-        address platformOwner;                                    // This is added when ERC20V2 is being deployed into same struct 
+        IERC20 stakingToken;
+        IERC20 rewardsToken;
     }
 
 
