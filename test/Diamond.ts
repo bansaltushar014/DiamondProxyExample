@@ -66,7 +66,6 @@ describe("Diamond", function () {
 		const StakingRewardsProxy = StakingRewards.attach(diamond.target) as StakingRewards;
 		const WithdrawFundsProxy = WithdrawFunds.attach(diamond.target) as WithdrawFunds;
         const diamondCutFacetProxy = DiamondCutFacet.attach(diamond.target) as DiamondCutFacet;
-		console.log(RewardsProxy.interface)
 
 		return { owner, firstAddress, secondAddress, diamondCutFacet, diamondCutFacetProxy, diamond, GetValuesProxy, RewardsProxy,  StakingRewardsProxy, WithdrawFundsProxy, eRC20Reward, eRC20Stake};
 	}
@@ -80,110 +79,51 @@ describe("Diamond", function () {
 				deployFacets
 			));
 
-			eRC20Reward.mint("10000000000000000000000")
-			eRC20Reward.transfer(diamond, "10000000000000000000000")
-			RewardsProxy.connect(owner).setInitialValue(eRC20Stake.target, eRC20Stake.target)
+			eRC20Reward.mint("100000000000000000000")
+			eRC20Reward.transfer(diamond.target, "100000000000000000000")
+			RewardsProxy.connect(owner).setInitialValue(eRC20Stake.target, eRC20Reward.target)
 		});
         it("Check the Balance", async function () {
-			expect(await eRC20Reward.connect(owner).balanceOf(diamond)).to.equal("10000000000000000000000");
+			expect(await eRC20Reward.connect(owner).balanceOf(diamond.target)).to.equal("100000000000000000000");
 		});
 		it("Set the duration", async function () {
-			expect(await RewardsProxy.connect(owner).setRewardsDuration(10000)).not.to.be.reverted;
+			expect(await RewardsProxy.connect(owner).setRewardsDuration(1000)).not.to.be.reverted;
 		});
 		it("Set the notifyRewardAmount", async function () {
 			expect(await RewardsProxy.connect(owner).notifyRewardAmount("1000000000000000000")).not.to.be.reverted;
 		});
-		
-		// it("Get the Total Supply as Zero", async function () {
-		// 	expect(await diamondV1Proxy.connect(owner).getTotalSupply()).to.equal(0);
-		// });
-		// it("Mint 10000 tokens ", async function () {
-		// 	expect(await diamondV1Proxy.connect(owner).mint(10000)).not.to.be.reverted;
-		// 	expect(await diamondV1Proxy.connect(owner).getTotalSupply()).to.equal(10000);
-		// });
-		// it("Transfer tokens ", async function () {
-		// 	expect(await diamondV1Proxy.connect(owner).transfer(firstAddress.address, 100)).not.to
-		// 		.be.reverted;
-		// });
-		// it("Balance of tokens ", async function () {
-		// 	await expect(await diamondV1Proxy.connect(owner).getBalance(firstAddress.address)).to.be.revertedWithCustomError(diamond, "FunctionNotFound");
-		// });
+		it("Mint token and put them on stake", async function() {
+			expect(await eRC20Stake.connect(firstAddress).mint("1000000000000000000")).not.to.be.reverted;
+			expect(await eRC20Stake.connect(firstAddress).approve(diamond.target, "1000000000000000000")).not.to.be.reverted;
+			expect(await StakingRewardsProxy.connect(firstAddress).stake("1000000000000000000")).not.to.be.reverted;
+			expect(await eRC20Stake.connect(firstAddress).balanceOf(firstAddress)).to.equal("0") 				// As stacked everything , so balance 0
+			expect(await GetValuesProxy.connect(owner)._totalSupply()).to.equal("1000000000000000000")
+		})
+		it("How much earned!", async function() {
+			await time.increase(10);		// Waiting for 10 seconds 
+			expect(await RewardsProxy.connect(firstAddress).earned(firstAddress)).to.equal("10000000000000000")  // per second reward 1*10**15 , after 10 sec it will be 1*10**16 
+		})
+		it("Get collected Reward - First!", async function() {
+			expect(await RewardsProxy.connect(firstAddress).getReward()).not.to.be.reverted;
+			expect(await eRC20Reward.connect(firstAddress).balanceOf(firstAddress)).to.equal("11000000000000000") // After the last test , reward gets increase by 1*10**15 
+		})
+		it("Still earning Reward, Stop it!", async function() {
+			await time.increase(10);		// Waiting for 10 seconds 
+			expect(await RewardsProxy.connect(firstAddress).earned(firstAddress)).to.equal("10000000000000000")  // per second reward 1*10**15 , after 10 sec it will be 1*10**16 
+			expect(await WithdrawFundsProxy.connect(firstAddress).withdraw("1000000000000000000")).not.to.be.reverted;
+			expect(await GetValuesProxy.connect(owner)._totalSupply()).to.equal("0")
+			expect(await RewardsProxy.connect(firstAddress).earned(firstAddress)).to.equal("11000000000000000")  // After the last test , reward gets increase by 1*10**15 
+			await time.increase(10);		// Waiting for 10 seconds 
+			expect(await RewardsProxy.connect(firstAddress).earned(firstAddress)).to.equal("11000000000000000")  // Even after 10 sec now the earned value will remain as all the stacked amount withdrawn 
+		})
+		it("Get remaining collected Reward - Last!", async function() {
+			expect(await RewardsProxy.connect(firstAddress).getReward()).not.to.be.reverted;
+			expect(await eRC20Reward.connect(firstAddress).balanceOf(firstAddress)).to.equal("22000000000000000") // First getRewards 11000000000000000 + Last getRewards 11000000000000000
+		})
+		it("Validate the withdrawl token and Earned reward", async function() {
+			expect(await eRC20Stake.connect(firstAddress).balanceOf(firstAddress)).to.equal("1000000000000000000") // Stacked Amount
+			expect(await eRC20Reward.connect(firstAddress).balanceOf(firstAddress)).to.equal("22000000000000000")  // Earned reward
+		})
 	});
 
-    // describe("Add Balance Functionality",async function () {
-	// 	let erc20v1, owner:any , firstAddress: any, diamondCutFacetProxy:any, diamond:any, diamondV1Proxy:any;
-
-	// 	before(async function () {
-	// 		// Define the variables once before the tests
-	// 		({ erc20v1, owner, firstAddress, diamond, diamondV1Proxy, diamondCutFacetProxy } = await loadFixture(
-	// 			deployFacets
-	// 		));
-    //         const __diamondCut = [{ facetAddress: erc20v1.target, action: "0", functionSelectors: ["0xf8b2cb4f"] }] // function signature 'getBalance(address)'
-    //         const _init = "0x0000000000000000000000000000000000000000"
-    //         const _calldata = "0x"
-
-    //         await diamondCutFacetProxy.connect(owner).diamondCut(__diamondCut, _init, _calldata)
-
-	// 	});
-
-	// 	it("Get the Total Supply as Zero", async function () {
-	// 		expect(await diamondV1Proxy.connect(owner).getTotalSupply()).to.equal(0);
-	// 	});
-	// 	it("Mint 10000 tokens ", async function () {
-	// 		expect(await diamondV1Proxy.connect(owner).mint(10000)).not.to.be.reverted;
-	// 		expect(await diamondV1Proxy.connect(owner).getTotalSupply()).to.equal(10000);
-	// 	});
-	// 	it("Transfer tokens ", async function () {
-	// 		expect(await diamondV1Proxy.connect(owner).transfer(firstAddress.address, 100)).not.to
-	// 			.be.reverted;
-	// 	});
-	// 	it("Balance of tokens ", async function () {
-	// 		expect(await diamondV1Proxy.connect(owner).getBalance(firstAddress.address)).to.equal(100)
-	// 	});
-	// });
-
-    // describe("Modify Transfer Functionality",async function () {
-	// 	let erc20v1, owner: any , firstAddress: any, secondAddress: any, diamondCutFacetProxy: any, diamond: any, diamondV1Proxy: any;
-
-	// 	before(async function () {
-	// 		// Define the variables once before the tests
-	// 		({ erc20v1, owner, firstAddress, secondAddress, diamond, diamondV1Proxy, diamondCutFacetProxy } = await loadFixture(
-	// 			deployFacets
-	// 		));
-
-    //         const ERC20V2 = await ethers.getContractFactory("ERC20V2");
-	// 	    const erc20v2 = await ERC20V2.connect(owner).deploy();
-    //         const diamondV2Proxy = ERC20V2.attach(diamond.target) as ERC20V2;
-            
-    //         const __diamondCut = [{ facetAddress: erc20v1.target, action: "0", functionSelectors: ["0xf8b2cb4f"] }, // function signature 'getBalance(address)'
-    //                               { facetAddress: erc20v2.target, action: "1", functionSelectors: ["0xa9059cbb"] }, // function signature 'transfer(address , uint)'
-    //                               { facetAddress: erc20v2.target, action: "1", functionSelectors: ["0x23b872dd"] }, // function signature 'transferFrom(address, address, uint)'
-    //                               { facetAddress: erc20v2.target, action: "0", functionSelectors: ["0x54daabc3"] }] // function signature 'function setPlatformOwner(address _platformOwner) public  '
-                                  
-    //         const _init = "0x0000000000000000000000000000000000000000"
-    //         const _calldata = "0x"
-
-    //         await diamondCutFacetProxy.connect(owner).diamondCut(__diamondCut, _init, _calldata)
-    //         await diamondV2Proxy.connect(owner).setPlatformOwner(secondAddress.address)                     // As setPlatformOwner provided by ERCV2 so it needs to be called by diamondv2 instead diamondv1
-
-	// 	});
-
-	// 	it("Get the Total Supply as Zero", async function () {
-	// 		expect(await diamondV1Proxy.connect(owner).getTotalSupply()).to.equal(0);
-	// 	});
-	// 	it("Mint 10000 tokens ", async function () {
-	// 		expect(await diamondV1Proxy.connect(owner).mint(10000)).not.to.be.reverted;
-	// 		expect(await diamondV1Proxy.connect(owner).getTotalSupply()).to.equal(10000);
-	// 	});
-	// 	it("Transfer tokens ", async function () {
-	// 		expect(await diamondV1Proxy.connect(owner).transfer(firstAddress.address, 100)).not.to
-	// 			.be.reverted;
-	// 	});
-	// 	it("Balance of tokens ", async function () {
-	// 		expect(await diamondV1Proxy.connect(owner).getBalance(firstAddress.address)).to.equal(95)
-	// 	});
-    //     it("Balance of secondAddress", async function () {
-	// 		expect(await diamondV1Proxy.connect(owner).getBalance(secondAddress.address)).to.equal(5)
-	// 	});
-	// });
 });
