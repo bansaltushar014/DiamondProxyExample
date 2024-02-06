@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import {IERC20} from "../interfaces/IERC20.sol";
-import {StakingState} from "./AppStorage.sol";
 import "./Common.sol";
 
 contract Rewards is CommonFunc{
@@ -30,8 +29,8 @@ contract Rewards is CommonFunc{
 
         require(stakingStake.rewardRate > 0, "reward rate = 0");
         require(
-            stakingStake.rewardRate * stakingStake.duration <= stakingStake.rewardsToken.balanceOf(address(this)),
-            "reward amount > balance"
+            stakingStake.rewardRate * stakingStake.duration <= stakingStake.rewardsToken.balanceOf(address(this)),  
+            "reward amount > balance" 
         );
 
         stakingStake.finishAt = block.timestamp + stakingStake.duration;

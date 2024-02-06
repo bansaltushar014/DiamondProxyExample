@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import {IERC20} from "../interfaces/IERC20.sol";
-import {StakingState} from "./AppStorage.sol";
 import "./Common.sol";
 
 contract StakingRewards is CommonFunc{
